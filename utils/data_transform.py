@@ -46,27 +46,30 @@ class DataTransform_Diffusion:
         # k-space, transform the data into appropriate format
         kspace = transforms.to_tensor(kspace)  # [Nc,H,W,2]
 
-        # ====== Image reshaping ======
-        # img space
-        image_full = fastmri.ifft2c(kspace)  # [Nc,H,W,2]
-        # center cropping
-        image_full = transforms.complex_center_crop(image_full, [320, 320])  # [Nc,H,W,2]
-        # resize img
-        if self.img_size != 320:
-            image_full = torch.einsum('nhwc->nchw', image_full)
-            image_full = T.Resize(size=self.img_size)(image_full)
-            image_full = torch.einsum('nchw->nhwc', image_full)
+        # # ====== Image reshaping ======
+        # # img space
+        # image_full = fastmri.ifft2c(kspace)  # [Nc,H,W,2]
+        # # center cropping
+        # image_full = transforms.complex_center_crop(image_full, [256, 256])  # [Nc,H,W,2]
+        # # resize img
+        # if self.img_size != 256:
+        #     image_full = torch.einsum('nhwc->nchw', image_full)
+        #     image_full = T.Resize(size=self.img_size)(image_full)
+        #     image_full = torch.einsum('nchw->nhwc', image_full)
 
-        # for now assume combined coil only
-        if self.combine_coil:
-            image_full = fastmri.rss(image_full).unsqueeze(0)  # [1,H,W,2]
+        # # for now assume combined coil only
+        # print("combine_coil: ", self.combine_coil)
+        # if self.combine_coil:
+        #     image_full = fastmri.rss(image_full).unsqueeze(0)  # [1,H,W,2]
 
-        # img to k-space
-        kspace = fastmri.fft2c(image_full)  # [Nc,H,W,2]
+        # print("image_full: ", image_full.shape)
+        # # img to k-space
+        # kspace = fastmri.fft2c(image_full)  # [Nc,H,W,2]
+        # print("kspace from image_full: ", kspace.shape)
 
         # ====== Fully-sampled ===
         # img space
-        image_full_abs = fastmri.complex_abs(image_full)  # [Nc,H,W]
+        # image_full_abs = fastmri.complex_abs(image_full)  # [Nc,H,W]
 
         # ====== Under-sampled ======
         # apply mask
