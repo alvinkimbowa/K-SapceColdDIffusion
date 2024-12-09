@@ -199,7 +199,7 @@ class Trainer(object):
         backwards = partial(loss_backwards, self.fp16)
 
         acc_loss = 0
-        pbar = tqdm(range(self.train_num_steps), desc='LOSS')
+        pbar = tqdm(range(self.train_num_steps), desc='LOSS', initial=self.step)
         # while self.step < self.train_num_steps:
         for step in pbar:
             self.step = step
