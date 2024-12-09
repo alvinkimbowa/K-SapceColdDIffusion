@@ -15,6 +15,9 @@ from diffusion.kspace_diffusion import KspaceDiffusion
 from utils.diffusion_train import Trainer
 from net.u_net_diffusion import Unet
 
+from glob import glob
+from natsort import natsorted
+
 
 # Parse command-line arguments
 def parse_args():
@@ -37,15 +40,17 @@ def parse_args():
     parser.add_argument('--save_every', type=int, default=15000, help='Save model every n steps')
     parser.add_argument('--train', action='store_true', help='Train the model')
     parser.add_argument('--test_steps', type=int, default=125, help='Number of test steps')
+    parser.add_argument('--load_path', type=str, default=None, help='Path to load model.')
     
     return parser.parse_args()
 
 def main():
     # Parse command line arguments
     args = parse_args()
+    for arg in vars(args):
+        print(arg, getattr(args, arg))
 
     # Setup environment
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     print(torch.__version__)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print('device:', device)
@@ -134,6 +139,11 @@ def main():
         kspace_diff=args.kspace_diff
     ).cuda()
 
+    # obtain load path
+    if args.load_path is None:
+        ckpts = glob(f'{PATH_MODEL}/model_*.pt')
+        args.load_path = natsorted(ckpts)[-1] if ckpts else None
+
     # Construct trainer and train
     trainer = Trainer(
         diffusion,
@@ -144,9 +154,9 @@ def main():
         gradient_accumulate_every=2,
         ema_decay=0.995,
         fp16=False,
-        save_and_sample_every=args.save_every,
+        save_and_sample_every=args.save_every if args.multicoil else args.save_every // 4,
         results_folder=PATH_MODEL,
-        load_path=None,
+        load_path=load_path,
         dataloader_train=dataloader_train,
         dataloader_test=dataloader_test,
     )

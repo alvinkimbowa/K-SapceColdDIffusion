@@ -172,10 +172,18 @@ class KspaceDiffusion(nn.Module):
             step = torch.full((batch_size,), t, dtype=torch.long).cuda()
 
             if self.multicoil:
-                k = kspace.permute(0, 4, 1, 2, 3).reshape(kspace.shape[0], -1, kspace.shape[2], kspace.shape[3])
-                k = self.denoise_fn(k, step)
-                k = k.view(kspace.shape[0], kspace.shape[4], kspace.shape[1], kspace.shape[2], kspace.shape[3]).permute(0, 2, 3, 4, 1)
-                x = fastmri.ifft2c(k)  # [B,Nc,H,W,2]
+                # print("chose multicoil")
+                if self.kspace_diff:
+                    # print("in kspace_diff")
+                    k = kspace.permute(0, 4, 1, 2, 3).reshape(kspace.shape[0], -1, kspace.shape[2], kspace.shape[3])
+                    k = self.denoise_fn(k, step)
+                    k = k.view(kspace.shape[0], kspace.shape[4], kspace.shape[1], kspace.shape[2], kspace.shape[3]).permute(0, 2, 3, 4, 1)
+                    x = fastmri.ifft2c(k)  # [B,Nc,H,W,2]
+                else:
+                    x = img.permute(0, 4, 1, 2, 3).reshape(img.shape[0], -1, img.shape[2], img.shape[3])
+                    x = self.denoise_fn(k, step)
+                    x = k.view(img.shape[0], img.shape[4], img.shape[1], img.shape[2], img.shape[3]).permute(0, 2, 3, 4, 1)
+                    x = fastmri.ifft2c(k)  # [B,Nc,H,W,2]
             else:
                 if self.kspace_diff:
                     k = torch.zeros(kspace.shape).to(self.device_of_kernel)
@@ -202,12 +210,12 @@ class KspaceDiffusion(nn.Module):
                         x_times, k_times = self.q_sample(k, mask_seqs, mask, mask_fold, step)
                         x_times_sub_1, k_times_sub_1 = self.q_sample(k, mask_seqs, mask, mask_fold, step - 1)
 
-                    if self.multicoil:
+                    if self.kspace_diff:
                         k = kspace - k_times + k_times_sub_1
                     else:
                         x = img - x_times + x_times_sub_1
             
-            if self.multicoil:
+            if self.kspace_diff:
                 kspace = k
                 img = fastmri.ifft2c(kspace)  # [B,Nc,H,W,2]
             else:
@@ -233,12 +241,20 @@ class KspaceDiffusion(nn.Module):
             x_blur, k_blur = self.q_sample(kspace, mask_seqs, mask, mask_fold, t)  # [B,Nc,H,W,2]
 
             if self.multicoil:
+                # print("in multicoil")
                 # Treat complex multicoils as channels [B, Nc*2, H, W]
-                k_recon = k_blur.permute(0, 4, 1, 2, 3).reshape(k_blur.shape[0], -1, k_blur.shape[2], k_blur.shape[3])
-                k_recon = self.denoise_fn(k_recon, t)
-                k_recon = k_recon.view(k_blur.shape[0], k_blur.shape[4], k_blur.shape[1], k_blur.shape[2], k_blur.shape[3]).permute(0, 2, 3, 4, 1)
+                if self.kspace_diff:
+                    # print("in kspace_diff")
+                    # k_recon = k_blur.permute(0, 4, 1, 2, 3).reshape(k_blur.shape[0], -1, k_blur.shape[2], k_blur.shape[3])
+                    k_recon = self.denoise_fn(k_blur.permute(0, 4, 1, 2, 3).reshape(k_blur.shape[0], -1, k_blur.shape[2], k_blur.shape[3]), t).view(k_blur.shape[0], k_blur.shape[4], k_blur.shape[1], k_blur.shape[2], k_blur.shape[3]).permute(0, 2, 3, 4, 1)
+                    # k_recon = k_recon.view(k_blur.shape[0], k_blur.shape[4], k_blur.shape[1], k_blur.shape[2], k_blur.shape[3]).permute(0, 2, 3, 4, 1)
+                else:
+                    x_recon = x_blur.permute(0, 4, 1, 2, 3).reshape(x_blur.shape[0], -1, x_blur.shape[2], x_blur.shape[3])
+                    x_recon = self.denoise_fn(x_recon, t)
+                    x_recon = x_recon.view(x_blur.shape[0], x_blur.shape[4], x_blur.shape[1], x_blur.shape[2], x_blur.shape[3]).permute(0, 2, 3, 4, 1)
             else:
                 if self.kspace_diff:
+                    # print("in kspace_diff")
                     k_recon = torch.zeros(k_blur.shape).to(self.device_of_kernel)
                     for i in range(Nc):
                         k_recon[:, i, :] = self.denoise_fn(k_blur[:, i, :].permute(0, 3, 1, 2), t).permute(0, 2, 3, 1)  # [B,Nc,H,W,2]
