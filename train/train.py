@@ -156,7 +156,7 @@ def main():
         fp16=False,
         save_and_sample_every=args.save_every if args.multicoil else args.save_every // 4,
         results_folder=PATH_MODEL,
-        load_path=load_path,
+        load_path=args.load_path,
         dataloader_train=dataloader_train,
         dataloader_test=dataloader_test,
     )
