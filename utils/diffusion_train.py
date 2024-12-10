@@ -314,10 +314,10 @@ class Trainer(object):
                     print('sample_imgs_abs slice shape:', gt_imgs_abs[0].unsqueeze(0).shape)
                     print('Batch PSNR:%.5f || SSIM:%.5f' % (psnrb, ssimb))
 
-                sample_imgs_list.append(sample_imgs)
-                gt_imgs_list.append(gt_imgs)
-                xt_list.append(xt)
-                direct_recons_list.append(direct_recons)
+                # sample_imgs_list.append(sample_imgs)
+                # gt_imgs_list.append(gt_imgs)
+                # xt_list.append(xt)
+                # direct_recons_list.append(direct_recons)
 
             nmse = nmse / len(self.dataloader_test)
             psnr = psnr / len(self.dataloader_test)
