@@ -113,7 +113,8 @@ def main():
 
     # Save settings
     PATH_MODEL = f'{save_dir}/{exp_name}_{acc}x_T{time_steps}_S{train_steps}/'
-    create_path(PATH_MODEL)
+    if args.train:
+        create_path(PATH_MODEL)
 
     # Construct diffusion model
     channels=8 if args.multicoil else 2
@@ -143,6 +144,9 @@ def main():
     if args.load_path is None:
         ckpts = glob(f'{PATH_MODEL}/model_*.pt')
         args.load_path = natsorted(ckpts)[-1] if ckpts else None
+
+    if not args.train and args.load_path is None:
+        raise ValueError('No trained model found at %s' % PATH_MODEL)
 
     # Construct trainer and train
     trainer = Trainer(

@@ -133,7 +133,6 @@ class Trainer(object):
         self.step = 0
 
         self.results_folder = Path(results_folder)
-        self.results_folder.mkdir(exist_ok=True)
 
         self.fp16 = fp16
 
@@ -195,6 +194,7 @@ class Trainer(object):
         cv2.imwrite(path, vcat)
 
     def train(self):
+        self.results_folder.mkdir(exist_ok=True)
 
         backwards = partial(loss_backwards, self.fp16)
 
